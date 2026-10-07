@@ -1,0 +1,37 @@
+import React,{useEffect,useMemo,useState} from 'react';
+import {createRoot} from 'react-dom/client';
+import {Activity,AlertTriangle,ArrowLeft,ArrowRight,BarChart3,BookOpen,BriefcaseBusiness,Check,CheckCircle2,ChevronRight,ClipboardCheck,Command,Database,FileCheck2,FileText,Gauge,GitBranch,HelpCircle,LayoutDashboard,MessageSquare,PanelLeftClose,Play,Plus,Search,ShieldCheck,Target,Users,Workflow,X,Zap} from 'lucide-react';
+import './index.css';
+
+type Page='Overview'|'Action Center'|'Account Health'|'Data Integrity'|'Documents'|'Stakeholders'|'Risks'|'Meetings'|'Playbooks'|'Insights';
+type Action={id:number;title:string;context:string;owner:string;priority:string;due:string;status:string;dependency:string;next:string};
+const nav:[Page,React.ElementType][]= [['Overview',LayoutDashboard],['Action Center',ClipboardCheck],['Account Health',Gauge],['Data Integrity',Database],['Documents',FileText],['Stakeholders',Users],['Risks',AlertTriangle],['Meetings',MessageSquare],['Playbooks',BookOpen],['Insights',BarChart3]];
+const initialActions:Action[]=[
+{id:1,title:'Confirm staffing requirement',context:'People Success',owner:'People Success',priority:'High',due:'Today',status:'Waiting',dependency:'Capacity confirmation',next:'Confirm required engineering capacity.'},
+{id:2,title:'Update account plan',context:'Account Operations',owner:'TAM',priority:'Medium',due:'Today',status:'In Progress',dependency:'Quarterly review',next:'Update current priorities and owners.'},
+{id:3,title:'Security questionnaire',context:'Documentation',owner:'Client',priority:'High',due:'Tomorrow',status:'Waiting',dependency:'Client confirmation',next:'Follow up for missing controls.'},
+{id:4,title:'Invoice confirmation',context:'Finance',owner:'Finance',priority:'Medium',due:'Oct 12',status:'Completed',dependency:'Invoice review',next:'No action required.'},
+{id:5,title:'Validate headcount source',context:'Data Integrity',owner:'TAM',priority:'High',due:'Today',status:'In Progress',dependency:'CRM / ERP mismatch',next:'Confirm authoritative source.'},
+{id:6,title:'QBR agenda review',context:'Client Meeting',owner:'Account Manager',priority:'Medium',due:'Friday',status:'Completed',dependency:'QBR preparation',next:'Share final agenda.'},
+{id:7,title:'Recruiting capacity check',context:'Staffing',owner:'Recruiting',priority:'High',due:'Friday',status:'Waiting',dependency:'Open role',next:'Confirm hiring timeline.'},
+];
+const metrics=[['Delivery','94','No critical delivery blockers'],['People','88','Staffing confirmation pending'],['Documentation','96','One client confirmation pending'],['Data Quality','98','CRM, ERP and internal records aligned after verification'],['Client Engagement','91','One follow-up due this week']];
+function App(){
+ const [page,setPage]=useState<Page>('Overview'); const [actions,setActions]=useState(initialActions); const [selected,setSelected]=useState<Action|null>(null); const [toast,setToast]=useState(''); const [presentation,setPresentation]=useState(false); const [demo,setDemo]=useState(false); const [demoStep,setDemoStep]=useState(0); const [searchOpen,setSearchOpen]=useState(false); const [query,setQuery]=useState(''); const [attention,setAttention]=useState(true); const [dataResolved,setDataResolved]=useState(false); const [docRequested,setDocRequested]=useState(false); const [health,setHealth]=useState(92);
+ const notify=(s:string)=>{setToast(s);setTimeout(()=>setToast(''),2400)};
+ useEffect(()=>{const f=(e:KeyboardEvent)=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setSearchOpen(true)} if(e.key==='Escape'){setSearchOpen(false);setSelected(null);setPresentation(false)} if(e.key.toLowerCase()==='p'&&!e.metaKey&&!e.ctrlKey){setPresentation(v=>!v)} if(presentation&&e.key==='ArrowRight') nextPresentation(); if(presentation&&e.key==='ArrowLeft') prevPresentation()};window.addEventListener('keydown',f);return()=>window.removeEventListener('keydown',f)},[presentation,page]);
+ const completeAction=(a:Action)=>{setActions(xs=>xs.map(x=>x.id===a.id?{...x,status:'Verified'}:x));setSelected({...a,status:'Verified'});notify('Action verified — confirm to close.');};
+ const closeAction=()=>{if(!selected)return;setActions(xs=>xs.map(x=>x.id===selected.id?{...x,status:'Completed'}:x));setSelected(null);setHealth(h=>Math.min(99,h+1));notify('Action closed — account state updated.');};
+ const createAction=()=>{const a:Action={id:Date.now(),title:'Confirm required engineering capacity',context:'Monthly Account Readout',owner:'People Success',priority:'High',due:'Friday',status:'In Progress',dependency:'Next delivery cycle',next:'Confirm capacity and hiring timeline.'};setActions(x=>[a,...x]);notify('Action created — added to Action Center.');setPage('Action Center');};
+ const startDemo=()=>{setDemo(true);setDemoStep(1);setPage('Data Integrity');setDataResolved(false);setHealth(88);setTimeout(()=>{setDataResolved(true);setDemoStep(2);notify('Signal verified — source of truth confirmed.');},2200);setTimeout(()=>{setDemoStep(3);setPage('Action Center');},4200);setTimeout(()=>{setDemoStep(4);setPage('Overview');setHealth(92);},6500);setTimeout(()=>{setDemo(false);setDemoStep(0);},8500)};
+ const steps=['Overview','Attention','Data Integrity','Action Center','Meeting → Execution','Risk Radar','Account Pulse Framework'] as const; const [presStep,setPresStep]=useState(0);
+ function nextPresentation(){setPresStep(s=>Math.min(steps.length-1,s+1));setPage((['Overview','Overview','Data Integrity','Action Center','Meetings','Risks','Insights'] as Page[])[Math.min(presStep+1,6)]);}
+ function prevPresentation(){setPresStep(s=>Math.max(0,s-1));setPage((['Overview','Overview','Data Integrity','Action Center','Meetings','Risks','Insights'] as Page[])[Math.max(presStep-1,0)]);}
+ const filtered=useMemo(()=>actions.filter(a=>(a.title+a.context+a.owner+a.status).toLowerCase().includes(query.toLowerCase())),[actions,query]);
+ return <div className="min-h-screen bg-[#080b10] text-slate-100 flex">
+   {!presentation&&<aside className="w-[236px] shrink-0 border-r border-white/8 bg-[#0b0f15] hidden md:flex flex-col sticky top-0 h-screen">
+    <div className="px-5 py-5 border-b border-white/8"><div className="flex items-center gap-2"><div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center font-bold">AP</div><div><div className="font-semibold tracking-tight">ACCOUNT PULSE</div><div className="text-[10px] uppercase tracking-[.18em] text-slate-500">Technical Account OS</div></div></div></div>
+    <div className="px-3 py-4 space-y-1">{nav.map(([n,I])=><button key={n} onClick={()=>setPage(n)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition ${page===n?'bg-white/8 text-white':'text-slate-400 hover:text-white hover:bg-white/5'}`}><I size={16}/><span>{n}</span>{n==='Action Center'&&<span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300">14</span>}</button>)}</div>
+    <div className="mt-auto p-4"><div className="border border-white/8 rounded-xl p-3 bg-white/[.02]"><div className="text-xs text-slate-400">ACME TECHNOLOGIES</div><div className="mt-2 flex items-center gap-2 text-sm"><span className="w-2 h-2 rounded-full bg-emerald-400"/>Healthy</div><div className="mt-1 text-[11px] text-slate-500">Last reviewed · Just now</div></div></div>
+   </aside>}
+   <main className="flex-1 min-w-0">
